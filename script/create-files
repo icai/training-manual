@@ -5,8 +5,8 @@
 # Source it up
 # shellcheck disable=SC1090
 source "$HOME/.trainingmanualrc"
-# shellcheck source=script/ask
-source ./ask
+# shellcheck source=script/get_collaborators
+source ./shared_functions
 
 #################################################################
 # NOTE: You must have a personal access token (PAT)             #
@@ -16,7 +16,6 @@ source ./ask
 
 # GLOBALS
 COLLAB_REPO=$1
-REPO_URL="https://$INSTANCE_URL/repos/$CLASS_ORG/$COLLAB_REPO"
 
 add_collaborators() {
   for commenter in "${commenters[@]}"; do
@@ -165,23 +164,6 @@ create_one_on_one_issue() {
   done
 
   curl -s -i -u "$TOKEN_OWNER:$TEACHER_PAT" -d "{ \"title\": \"$issue_title\", \"body\": $issue_body }" -X POST "$REPO_URL/issues" >>log.out 2>&1
-}
-
-get_collaborators() {
-  # Get array of repository collaborators
-  IFS=" " read -ra collaborators <<<"$(
-    curl -su "$TOKEN_OWNER:$TEACHER_PAT" -X GET "$REPO_URL/collaborators?affiliation=direct&per_page=100" |
-      jq -r 'map(.login) | unique | @sh' | tr -d \'
-  )" >>log.out 2>&1
-
-  # Get array of repository invitees
-  IFS=" " read -ra invitees <<<"$(
-    curl -su "$TOKEN_OWNER:$TEACHER_PAT" -X GET "$REPO_URL/invitations" |
-      jq -r 'map(.invitee.login) | unique | @sh' | tr -d \'
-  )" >>log.out 2>&1
-
-  # Invitees are collaborators too
-  collaborators+=("${invitees[@]}")
 }
 
 get_commenters() {

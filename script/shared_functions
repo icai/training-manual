@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# Shared functions
+
+# shellcheck source=script/ask
+source ./ask
+
+# GLOBALS
+REPO_URL="https://$INSTANCE_URL/repos/$CLASS_ORG/$COLLAB_REPO"
+
+get_collaborators() {
+  # Get array of repository collaborators
+  IFS=" " read -ra collaborators <<<"$(
+    curl -su "$TOKEN_OWNER:$TEACHER_PAT" -X GET "$REPO_URL/collaborators?affiliation=direct&per_page=100" |
+      jq -r 'map(.login) | unique | @sh' | tr -d \'
+  )" >>log.out 2>&1
+
+  # Get array of repository invitees
+  IFS=" " read -ra invitees <<<"$(
+    curl -su "$TOKEN_OWNER:$TEACHER_PAT" -X GET "$REPO_URL/invitations" |
+      jq -r 'map(.invitee.login) | unique | @sh' | tr -d \'
+  )" >>log.out 2>&1
+
+  # Invitees are collaborators too
+  collaborators+=("${invitees[@]}")
+}
